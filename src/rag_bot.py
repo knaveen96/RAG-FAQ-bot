@@ -1,31 +1,68 @@
 import os
-from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
-from langchain.vectorstores import FAISS
-from langchain.chains import RetrievalQA
-from config import GEMINI_API_KEY
-
-#Load the FAISS index built in ingest.py
-embeddings = GoogleGenerativeAIEmbeddings(
-    model="models/embedding-001",
-    google_api_key=GEMINI_API_KEY
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_community.vectorstores import FAISS
+from langchain.chains import ConversationalRetrievalChain
+from langchain.memory import ConversationBufferMemory
+from langchain.prompts import (
+    ChatPromptTemplate,
+    SystemMessagePromptTemplate,
+    HumanMessagePromptTemplate,
 )
-vectorstore = FAISS.load_local("data/index/faq_index", embeddings, allow_dangerous_deserialization=True)
+from config import OPENAI_API_KEY
+
+embeddings = OpenAIEmbeddings(
+    model="text-embedding-3-small",
+    openai_api_key=OPENAI_API_KEY
+)
+
+vectorstore = FAISS.load_local(
+    "data/index/faq_index",
+    embeddings,
+    allow_dangerous_deserialization=True
+)
 
 retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
 
-llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", google_api_key=GEMINI_API_KEY)
-
-qa_chain = RetrievalQA.from_chain_type(
-    llm=llm,
-    retriever=retriever,
-    return_source_documents=True
+llm = ChatOpenAI(
+    model="gpt-4o-mini",
+    openai_api_key=OPENAI_API_KEY
 )
 
-def ask_faq(question: str) -> str:
-    # Takes a user question and returns an answer using RAG
-    result = qa_chain({"query": question})
-    answer = result["result"]
+memory = ConversationBufferMemory(
+    memory_key="chat_history",
+    output_key="answer",
+    return_messages=True
+)
 
-    # Optional: include source context for transparency
+system_template = """
+You are a helpful assistant.
+You MUST respond in Telugu.
+Use the following context to answer the user's question.
+If you don't know the answer, just say that you don't know, don't try to make up an answer.
+----------------
+{context}
+"""
+
+messages = [
+    SystemMessagePromptTemplate.from_template(system_template),
+    HumanMessagePromptTemplate.from_template("Chat History:\n{chat_history}\n\nQuestion:\n{question}"),
+]
+
+qa_prompt = ChatPromptTemplate.from_messages(messages)
+
+qa_chain = ConversationalRetrievalChain.from_llm(
+    llm=llm,
+    retriever=retriever,
+    memory=memory,
+    return_source_documents=True,
+    chain_type="stuff",
+    combine_docs_chain_kwargs={'prompt': qa_prompt}
+)
+
+def ask_faq(user_query: str) -> str:
+    result = qa_chain({"question": user_query})
+    answer = result["answer"]
     sources = [doc.metadata.get("source", "N/A") for doc in result["source_documents"]]
+
+    formatted_sources = "\n".join(f"- {s}" for s in sources)
     return answer
