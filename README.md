@@ -16,22 +16,6 @@ Conversational memory with LangChain’s ConversationBufferMemory
 Ranking toggle: compare retrieval with vs. without re-ranking
 Streamlit UI for local testing
 
-🗂️ Project Structure
-RAG-FAQ-bot/
-│
-├── data/                    # Raw and indexed data
-│   ├── raw/                 # Scraped JSON articles
-│   └── index/               # FAISS vector index
-│
-├── src/
-│   ├── app.py               # Streamlit UI
-│   ├── rag.py               # RAG pipeline + ranking
-│   ├── ingest.py            # Embedding + FAISS index builder
-│   ├── scraper.py           # Scraper for new articles
-│   └── config.py            # API key loading
-│
-├── requirements.txt         # Dependencies
-└── README.md                # This file
 
 🔑 Setup
 
@@ -64,9 +48,6 @@ python src/ingest.py
 streamlit run src/app.py
 
 Then open 👉 http://localhost:8501 in your browser.
-
-🎯 Example Queries
-"What do you know about Sam Altman?"
 
 💡 Key Learnings
 Document chunking with RecursiveCharacterTextSplitter improves retrieval
