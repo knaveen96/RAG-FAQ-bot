@@ -1,8 +1,24 @@
-google-generativeai
+# Core LangChain
 langchain
-langchain-google-genai
 langchain-community
+langchain-openai
+langchain-google-genai
+
+# Embeddings / Vector stores
 faiss-cpu
+
+# Data loading / parsing
 pypdf
+
+# Web scraping
+requests
+beautifulsoup4
+
+# Utilities
 python-dotenv
+
+# App UI
 streamlit
+
+# Ranking
+sentence_transformers
